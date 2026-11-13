@@ -639,6 +639,9 @@ if (isset($_GET['action']) && $_GET['action'] === 'list') {
 if (isset($_GET['logout'])) { removeSessionPresence(); session_destroy(); header("Location: /"); exit; }
 
 // Authentication login handler
+$cookieLang = $_COOKIE['qp_lang'] ?? '';
+$userLang = in_array($cookieLang, ['en', 'ko'], true) ? $cookieLang : ($config['language'] ?? 'en');
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['action'])) {
     $now = time();
     $loginFails = $_SESSION['login_fail_count'] ?? 0;
@@ -646,7 +649,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['action'])) {
 
     if ($loginFails >= 5 && ($now - $lastFailTime) < 60) {
         $remaining = 60 - ($now - $lastFailTime);
-        $error_msg = "Too many login attempts. Please try again after {$remaining}s.";
+        $error_msg = ($userLang === 'ko')
+            ? "로그인 시도 횟수를 초과했습니다. {$remaining}초 후 다시 시도해주세요."
+            : "Too many login attempts. Please try again after {$remaining}s.";
     } else {
         if ($now - $lastFailTime >= 60) {
             $_SESSION['login_fail_count'] = 0;
@@ -674,7 +679,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['action'])) {
         } else {
             $_SESSION['login_fail_count'] = ($_SESSION['login_fail_count'] ?? 0) + 1;
             $_SESSION['login_last_fail_time'] = $now;
-            $error_msg = "Invalid password.";
+            $error_msg = ($userLang === 'ko') ? "비밀번호가 일치하지 않습니다." : "Invalid password.";
         }
     }
 }
@@ -684,7 +689,7 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
     $isAdminLogin = isset($_GET['admin']) && $_GET['admin'] === '1';
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<?php echo htmlspecialchars($userLang); ?>">
 <head>
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>LOGIN - qplus</title>
     <link rel="icon" type="image/png" href="/assets/qplus_symbol.png">
@@ -699,9 +704,12 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
         .error { color: #dc2626; font-size: 13px; margin-bottom: 16px; font-weight: 600; }
         .admin-entry { position: fixed; right: 24px; bottom: 24px; width: auto; padding: 9px 15px; background: #ffffff; color: #4a4a4a; border: 1px solid #e4e4e4; border-radius: 9px; font-size: 12.5px; font-weight: 600; text-decoration: none; transition: all 0.15s; }
         .admin-entry:hover { background: #e0f2fe; color: #0284c7; border-color: #e0f2fe; }
+        .lang-switch { position: fixed; top: 20px; right: 24px; width: auto; padding: 7px 13px; background: #ffffff; color: #4a4a4a; border: 1px solid #e4e4e4; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.15s; letter-spacing: 0.5px; }
+        .lang-switch:hover { background: #e0f2fe; color: #0284c7; border-color: #0284c7; }
     </style>
 </head>
 <body>
+    <button type="button" class="lang-switch" onclick="toggleLoginLang()"><?php echo $userLang === 'ko' ? '한국어' : 'EN'; ?></button>
     <div class="login-box">
         <div class="login-brand">
             <img src="/assets/qplus_symbol.png" alt="" style="height:28px;width:auto;">
@@ -710,15 +718,32 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
         <?php if (isset($error_msg)) echo "<div class='error'>{$error_msg}</div>"; ?>
         <form method="POST">
             <input type="hidden" name="role" value="<?php echo $isAdminLogin ? 'admin' : 'guest'; ?>">
-            <input type="password" name="password" placeholder="<?php echo $isAdminLogin ? 'Admin password' : 'Password'; ?>" required autofocus>
+            <input type="password" name="password" placeholder="<?php echo $userLang === 'ko' ? ($isAdminLogin ? '관리자 비밀번호' : '비밀번호') : ($isAdminLogin ? 'Admin password' : 'Password'); ?>" required autofocus>
             <button type="submit">LOGIN</button>
         </form>
     </div>
     <?php if ($isAdminLogin): ?>
-        <a class="admin-entry" href="/">Guest Login</a>
+        <a class="admin-entry" href="/"><?php echo $userLang === 'ko' ? '게스트 로그인' : 'Guest Login'; ?></a>
     <?php else: ?>
-        <a class="admin-entry" href="?admin=1">Admin Login</a>
+        <a class="admin-entry" href="?admin=1"><?php echo $userLang === 'ko' ? '관리자 로그인' : 'Admin Login'; ?></a>
     <?php endif; ?>
+    <script>
+        function toggleLoginLang() {
+            var cur = '<?php echo $userLang; ?>';
+            var next = cur === 'en' ? 'ko' : 'en';
+            document.cookie = 'qp_lang=' + next + ';path=/;max-age=31536000;SameSite=Lax';
+            try { localStorage.setItem('qplus_lang', next); } catch(e) {}
+            location.reload();
+        }
+        // Sync cookie if localStorage already had a preference
+        try {
+            var local = localStorage.getItem('qplus_lang');
+            if (local && (local === 'en' || local === 'ko') && local !== '<?php echo $userLang; ?>') {
+                document.cookie = 'qp_lang=' + local + ';path=/;max-age=31536000;SameSite=Lax';
+                location.reload();
+            }
+        } catch(e) {}
+    </script>
 </body>
 </html>
 <?php exit; } ?>

@@ -1316,7 +1316,7 @@ $serverLang = $config['language'] ?? 'en';
                     <button type="button" class="lang-toggle-btn" id="lang-toggle-btn" onclick="toggleLanguage()" title="Language / 언어 전환">EN</button>
                     <div class="session-pill" title="Active users">
                         <span class="session-dot"></span>
-                        <span><span data-i18n="online">접속</span> <strong id="active-session-number">-</strong><span data-i18n="online_unit">명</span></span>
+                        <span><span data-i18n="online"><?php echo $serverLang === 'ko' ? '접속중' : 'Online'; ?></span> <strong id="active-session-number">-</strong><span data-i18n="online_unit"><?php echo $serverLang === 'ko' ? '명' : ''; ?></span></span>
                     </div>
                     <span class="role-pill <?php echo $isAdmin ? '' : 'guest'; ?>">
                         <?php echo $isAdmin ? 'ADMIN' : 'GUEST'; ?>
@@ -1708,7 +1708,7 @@ $serverLang = $config['language'] ?? 'en';
                 storage_cap: "스토리지 용량",
                 storage_checking: "용량 확인 중...",
                 search_ph: "현재 폴더 내 파일·폴더 검색...",
-                online: "접속",
+                online: "접속중",
                 online_unit: "명",
                 logout: "로그아웃",
                 up: "상위",
@@ -1796,7 +1796,16 @@ $serverLang = $config['language'] ?? 'en';
             }
         };
 
-        let currentLang = localStorage.getItem('qplus_lang') || SERVER_LANG || 'en';
+        function getCookie(name) {
+            const v = `; ${document.cookie}`;
+            const parts = v.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+            return null;
+        }
+
+        let currentLang = localStorage.getItem('qplus_lang') || getCookie('qp_lang') || SERVER_LANG || 'en';
+        document.cookie = 'qp_lang=' + currentLang + ';path=/;max-age=31536000;SameSite=Lax';
+        try { localStorage.setItem('qplus_lang', currentLang); } catch(e) {}
 
         function t(key, ...args) {
             const dict = I18N[currentLang] || I18N['en'];
@@ -1811,7 +1820,8 @@ $serverLang = $config['language'] ?? 'en';
 
         function toggleLanguage() {
             currentLang = (currentLang === 'en') ? 'ko' : 'en';
-            localStorage.setItem('qplus_lang', currentLang);
+            try { localStorage.setItem('qplus_lang', currentLang); } catch(e) {}
+            document.cookie = 'qp_lang=' + currentLang + ';path=/;max-age=31536000;SameSite=Lax';
             applyLanguage(currentLang);
             if (typeof renderFileList === 'function') {
                 renderFileList();
@@ -1829,19 +1839,19 @@ $serverLang = $config['language'] ?? 'en';
             }
             document.querySelectorAll('[data-i18n]').forEach(el => {
                 const k = el.getAttribute('data-i18n');
-                if (k && I18N[lang] && I18N[lang][k]) {
+                if (k && I18N[lang] && I18N[lang][k] !== undefined) {
                     el.textContent = I18N[lang][k];
                 }
             });
             document.querySelectorAll('[data-i18n-ph]').forEach(el => {
                 const k = el.getAttribute('data-i18n-ph');
-                if (k && I18N[lang] && I18N[lang][k]) {
+                if (k && I18N[lang] && I18N[lang][k] !== undefined) {
                     el.setAttribute('placeholder', I18N[lang][k]);
                 }
             });
             document.querySelectorAll('[data-i18n-title]').forEach(el => {
                 const k = el.getAttribute('data-i18n-title');
-                if (k && I18N[lang] && I18N[lang][k]) {
+                if (k && I18N[lang] && I18N[lang][k] !== undefined) {
                     el.setAttribute('title', I18N[lang][k]);
                 }
             });
