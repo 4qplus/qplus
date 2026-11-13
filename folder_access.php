@@ -23,7 +23,7 @@ function normalizeFolderPath($path) {
 function resolveDirectoryFolderPath($path, $basePath) {
     $normalizedPath = normalizeFolderPath($path);
     if ($normalizedPath === '') {
-        return array('path' => '', 'error' => '폴더 경로를 입력하세요.');
+        return array('path' => '', 'error' => 'Folder path is required.');
     }
 
     $baseSystemPath = $basePath;
@@ -35,17 +35,17 @@ function resolveDirectoryFolderPath($path, $basePath) {
     $baseRealPath = realpath($baseSystemPath);
     $targetRealPath = realpath($targetSystemPath);
     if ($baseRealPath === false || $targetRealPath === false) {
-        return array('path' => '', 'error' => '존재하지 않는 폴더 경로입니다.');
+        return array('path' => '', 'error' => 'Folder path does not exist.');
     }
 
     $baseRealPath = rtrim(str_replace('\\', '/', $baseRealPath), '/');
     $targetRealPath = rtrim(str_replace('\\', '/', $targetRealPath), '/');
     if (strcasecmp($targetRealPath, $baseRealPath) === 0
         || strncasecmp($targetRealPath, $baseRealPath . '/', strlen($baseRealPath) + 1) !== 0) {
-        return array('path' => '', 'error' => 'directory 안에 있는 폴더만 지정할 수 있습니다.');
+        return array('path' => '', 'error' => 'Target must be inside the directory folder.');
     }
     if (!is_dir($targetRealPath)) {
-        return array('path' => '', 'error' => '파일이 아닌 폴더 경로를 입력하세요.');
+        return array('path' => '', 'error' => 'Target path must be a folder, not a file.');
     }
 
     return array('path' => $normalizedPath, 'error' => '');

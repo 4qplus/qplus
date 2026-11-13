@@ -12,7 +12,7 @@ if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
 
-// 비밀번호 및 기본 설정
+// Password and base configuration initialization
 $configFile = QPLUS_CONFIG_FILE;
 if (!file_exists($configFile)) {
     $initConfig = "<?php return array('admin_pw' => 'admin', 'guest_pw' => 'guest', 'folder_pws' => array()); ?>";
@@ -89,7 +89,7 @@ function formatBytes($bytes, $precision = 2) {
 }
 
 // --------------------------------------------------------
-// 백엔드 API 영역
+// Backend API Endpoints
 // --------------------------------------------------------
 
 if (isset($_GET['action']) && $_GET['action'] === 'session_presence') {
@@ -123,7 +123,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'presence_heartbeat') {
     exit;
 }
 
-// 1. 드라이브 용량 확인 API
+// 1. Storage disk space query API
 if (isset($_GET['action']) && $_GET['action'] === 'sysinfo') {
     if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) { http_response_code(401); exit; }
     
@@ -142,10 +142,10 @@ if (isset($_GET['action']) && $_GET['action'] === 'sysinfo') {
     exit;
 }
 
-// 2. 임시 파일(캐시) 삭제 API
+// 2. Temporary cache purge API
 if (isset($_POST['action']) && $_POST['action'] === 'clear_temp') {
     if (!isset($_SESSION['logged_in']) || $_SESSION['role'] !== 'admin') {
-        echo json_encode(['success' => false, 'msg' => '권한이 없습니다.']); exit;
+        echo json_encode(['success' => false, 'msg' => 'Unauthorized.']); exit;
     }
     
     $tempDir = QPLUS_TEMP_DIR;
@@ -166,12 +166,12 @@ if (isset($_POST['action']) && $_POST['action'] === 'clear_temp') {
     
     echo json_encode([
         'success' => true,
-        'msg' => "임시 파일 {$deletedCount}개를 삭제하여 " . formatBytes($freedSpace) . "의 공간을 확보했습니다."
+        'msg' => "Deleted {$deletedCount} temporary file(s) and freed " . formatBytes($freedSpace) . "."
     ]);
     exit;
 }
 
-// 3. 관리자/게스트 계정 비밀번호 변경 API
+// 3. Admin / Guest password change API
 if (isset($_POST['action']) && $_POST['action'] === 'change_password') {
     if (!isset($_SESSION['logged_in']) || $_SESSION['role'] !== 'admin') { http_response_code(401); exit; }
     
@@ -179,21 +179,21 @@ if (isset($_POST['action']) && $_POST['action'] === 'change_password') {
     $oldPw = $_POST['old_pw'] ?? '';
     $newPw = $_POST['new_pw'] ?? '';
     
-    if (!verifyPassword($oldPw, $admin_password)) { echo json_encode(['success' => false, 'msg' => '현재 관리자 비밀번호가 일치하지 않습니다.']); exit; }
-    if (empty($newPw)) { echo json_encode(['success' => false, 'msg' => '새 비밀번호를 입력해주세요.']); exit; }
+    if (!verifyPassword($oldPw, $admin_password)) { echo json_encode(['success' => false, 'msg' => 'Current admin password does not match.']); exit; }
+    if (empty($newPw)) { echo json_encode(['success' => false, 'msg' => 'Please enter a new password.']); exit; }
     
     if ($targetRole === 'admin') $config['admin_pw'] = password_hash($newPw, PASSWORD_DEFAULT);
     else if ($targetRole === 'guest') $config['guest_pw'] = password_hash($newPw, PASSWORD_DEFAULT);
     
     if (file_put_contents($configFile, "<?php return " . var_export($config, true) . "; ?>", LOCK_EX)) {
-        echo json_encode(['success' => true, 'msg' => ($targetRole === 'admin' ? '관리자' : '게스트') . ' 비밀번호가 변경되었습니다.']);
+        echo json_encode(['success' => true, 'msg' => ($targetRole === 'admin' ? 'Admin' : 'Guest') . ' password changed successfully.']);
     } else {
-        echo json_encode(['success' => false, 'msg' => '설정 파일을 저장할 수 없습니다.']);
+        echo json_encode(['success' => false, 'msg' => 'Failed to save configuration.']);
     }
     exit;
 }
 
-// 4. 폴더별 비밀번호 설정/해제 API
+// 4. Folder password set / clear API
 if (isset($_POST['action']) && $_POST['action'] === 'set_folder_password') {
     if (!isset($_SESSION['logged_in']) || $_SESSION['role'] !== 'admin') { http_response_code(401); exit; }
 
@@ -208,21 +208,21 @@ if (isset($_POST['action']) && $_POST['action'] === 'set_folder_password') {
 
     if ($folderPass === '') {
         unset($config['folder_pws'][$folderName]);
-        $msg = "[{$folderName}] 폴더의 비밀번호 잠금이 해제되었습니다.";
+        $msg = "Password lock removed for folder [{$folderName}].";
     } else {
         $config['folder_pws'][$folderName] = password_hash($folderPass, PASSWORD_DEFAULT);
-        $msg = "[{$folderName}] 폴더의 비밀번호가 설정되었습니다.";
+        $msg = "Password lock enabled for folder [{$folderName}].";
     }
 
     if (file_put_contents($configFile, "<?php return " . var_export($config, true) . "; ?>", LOCK_EX)) {
         echo json_encode(['success' => true, 'msg' => $msg]);
     } else {
-        echo json_encode(['success' => false, 'msg' => '설정을 저장할 수 없습니다.']);
+        echo json_encode(['success' => false, 'msg' => 'Failed to save configuration.']);
     }
     exit;
 }
 
-// 5. 폴더 접근 비밀번호 검증 API
+// 5. Folder access password verification API
 if (isset($_POST['action']) && $_POST['action'] === 'verify_folder') {
     header('Content-Type: application/json; charset=utf-8');
     if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) { http_response_code(401); exit; }
@@ -245,7 +245,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'verify_folder') {
     $failInfo = $_SESSION[$folderFailKey] ?? array('count' => 0, 'last' => 0);
     if ($failInfo['count'] >= 5 && ($now - $failInfo['last']) < 60) {
         $remaining = 60 - ($now - $failInfo['last']);
-        echo json_encode(['success' => false, 'msg' => "입력 시도 횟수를 초과했습니다. {$remaining}초 후 다시 시도해주세요."]);
+        echo json_encode(['success' => false, 'msg' => "Too many attempts. Please try again after {$remaining}s."]);
         exit;
     }
 
@@ -256,70 +256,70 @@ if (isset($_POST['action']) && $_POST['action'] === 'verify_folder') {
     } else {
         $newCount = ($failInfo['count'] >= 5 && ($now - $failInfo['last']) >= 60) ? 1 : ($failInfo['count'] + 1);
         $_SESSION[$folderFailKey] = array('count' => $newCount, 'last' => $now);
-        echo json_encode(['success' => false, 'msg' => '폴더 비밀번호가 일치하지 않습니다.']);
+        echo json_encode(['success' => false, 'msg' => 'Invalid folder password.']);
     }
     exit;
 }
 
-// 6. 폴더 생성 API
+// 6. Directory creation API
 if (isset($_POST['action']) && $_POST['action'] === 'create_folder') {
     if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
-        echo json_encode(['success' => false, 'msg' => '권한이 없습니다.']); exit;
+        echo json_encode(['success' => false, 'msg' => 'Unauthorized.']); exit;
     }
     $requestToken = $_POST['csrf_token'] ?? '';
     if (!is_string($requestToken) || !hash_equals($_SESSION['csrf_token'], $requestToken)) {
-        http_response_code(403); echo json_encode(['success' => false, 'msg' => '잘못된 요청입니다.']); exit;
+        http_response_code(403); echo json_encode(['success' => false, 'msg' => 'Invalid request.']); exit;
     }
     $targetDir = isset($_POST['path']) ? $_POST['path'] : '';
     $folderName = isset($_POST['folder_name']) ? trim($_POST['folder_name']) : '';
 
-    if ($folderName === '') { echo json_encode(['success' => false, 'msg' => '폴더 이름을 입력하세요.']); exit; }
-    if (preg_match('/[<>:"\/\\\\|?*]/', $folderName)) { echo json_encode(['success' => false, 'msg' => '폴더 이름에 사용할 수 없는 문자가 포함되어 있습니다.']); exit; }
+    if ($folderName === '') { echo json_encode(['success' => false, 'msg' => 'Folder name is required.']); exit; }
+    if (preg_match('/[<>:"\/\\\\|?*]/', $folderName)) { echo json_encode(['success' => false, 'msg' => 'Folder name contains invalid characters.']); exit; }
 
     $basePath = QPLUS_STORAGE_DIR;
     $targetDir = str_replace(array('..', '\\'), array('', '/'), $targetDir);
     $lockedFolder = findLockedFolderPath($targetDir, $folder_passwords, $_SESSION['unlocked_folders'] ?? array(), $_SESSION['role'] === 'admin');
     if ($lockedFolder !== null) {
-        http_response_code(403); echo json_encode(['success' => false, 'msg' => '폴더 잠금을 먼저 해제하세요.']); exit;
+        http_response_code(403); echo json_encode(['success' => false, 'msg' => 'Please unlock the parent folder first.']); exit;
     }
     $fullPath = rtrim($basePath . ltrim($targetDir, '/'), '/') . '/' . $folderName;
     $sysPath = toSys($fullPath);
 
-    if (file_exists($sysPath)) { echo json_encode(['success' => false, 'msg' => '이미 존재하는 폴더 이름입니다.']); exit; }
+    if (file_exists($sysPath)) { echo json_encode(['success' => false, 'msg' => 'A folder with this name already exists.']); exit; }
 
     if (mkdir($sysPath, 0777, true)) { echo json_encode(['success' => true]); } 
-    else { echo json_encode(['success' => false, 'msg' => '폴더 생성에 실패했습니다.']); }
+    else { echo json_encode(['success' => false, 'msg' => 'Failed to create folder.']); }
     exit;
 }
 
-// 7. 관리자 전용 파일/폴더 이동 API
+// 7. Admin item move API
 if (isset($_POST['action']) && $_POST['action'] === 'move_items') {
     header('Content-Type: application/json; charset=utf-8');
     if (!isset($_SESSION['logged_in']) || $_SESSION['role'] !== 'admin') {
-        http_response_code(401); echo json_encode(['success' => false, 'msg' => '권한이 없습니다.']); exit;
+        http_response_code(401); echo json_encode(['success' => false, 'msg' => 'Unauthorized.']); exit;
     }
 
     $requestToken = $_POST['csrf_token'] ?? '';
     if (!is_string($requestToken) || !hash_equals($_SESSION['csrf_token'], $requestToken)) {
-        http_response_code(403); echo json_encode(['success' => false, 'msg' => '잘못된 요청입니다.']); exit;
+        http_response_code(403); echo json_encode(['success' => false, 'msg' => 'Invalid request.']); exit;
     }
 
     $sources = json_decode($_POST['sources'] ?? '[]', true);
     $destination = trim(str_replace('\\', '/', $_POST['destination'] ?? ''), '/');
     if (!is_array($sources) || !$sources || preg_match('#(^|/)\.\.?(/|$)#', $destination)) {
-        http_response_code(400); echo json_encode(['success' => false, 'msg' => '이동 경로가 올바르지 않습니다.']); exit;
+        http_response_code(400); echo json_encode(['success' => false, 'msg' => 'Invalid move path.']); exit;
     }
 
     $basePath = realpath(QPLUS_STORAGE_DIR);
     $destinationPath = realpath(toSys(QPLUS_STORAGE_DIR . $destination));
     if ($basePath === false || $destinationPath === false || !is_dir($destinationPath)) {
-        http_response_code(400); echo json_encode(['success' => false, 'msg' => '대상 폴더를 찾을 수 없습니다.']); exit;
+        http_response_code(400); echo json_encode(['success' => false, 'msg' => 'Destination folder not found.']); exit;
     }
 
     $basePath = rtrim(str_replace('\\', '/', $basePath), '/') . '/';
     $destinationPath = rtrim(str_replace('\\', '/', $destinationPath), '/');
     if (stripos($destinationPath, $basePath) !== 0) {
-        http_response_code(403); echo json_encode(['success' => false, 'msg' => '허용되지 않은 경로입니다.']); exit;
+        http_response_code(403); echo json_encode(['success' => false, 'msg' => 'Path not allowed.']); exit;
     }
 
     $moved = 0;
@@ -353,15 +353,15 @@ if (isset($_POST['action']) && $_POST['action'] === 'move_items') {
 
     if ($folderAccessChanged && @file_put_contents($configFile, "<?php return " . var_export($config, true) . "; ?>", LOCK_EX) === false) {
         http_response_code(500);
-        echo json_encode(['success' => false, 'moved' => $moved, 'msg' => '폴더는 이동했지만 비밀번호 설정을 갱신하지 못했습니다.']);
+        echo json_encode(['success' => false, 'moved' => $moved, 'msg' => 'Items moved, but folder password settings could not be updated.']);
         exit;
     }
 
-    echo json_encode(['success' => $moved > 0, 'moved' => $moved, 'msg' => $moved > 0 ? '이동했습니다.' : '이동할 항목이 없거나 대상에 같은 이름이 있습니다.']);
+    echo json_encode(['success' => $moved > 0, 'moved' => $moved, 'msg' => $moved > 0 ? 'Moved successfully.' : 'No items moved (items may not exist or destination has same name).']);
     exit;
 }
 
-// 8. TIP 게시판 API
+// 8. Tips & Notice board API
 $tipsFile = QPLUS_TIPS_FILE;
 if (!file_exists($tipsFile)) {
     @file_put_contents($tipsFile, "<?php return array(); ?>");
@@ -380,21 +380,21 @@ if (isset($_GET['action']) && $_GET['action'] === 'tips') {
 if (isset($_POST['action']) && $_POST['action'] === 'save_tip') {
     header('Content-Type: application/json; charset=utf-8');
     if (!isset($_SESSION['logged_in']) || $_SESSION['role'] !== 'admin') {
-        http_response_code(401); echo json_encode(['success' => false, 'msg' => '권한이 없습니다.']); exit;
+        http_response_code(401); echo json_encode(['success' => false, 'msg' => 'Unauthorized.']); exit;
     }
     $requestToken = $_POST['csrf_token'] ?? '';
     if (!is_string($requestToken) || !hash_equals($_SESSION['csrf_token'], $requestToken)) {
-        http_response_code(403); echo json_encode(['success' => false, 'msg' => '잘못된 요청입니다.']); exit;
+        http_response_code(403); echo json_encode(['success' => false, 'msg' => 'Invalid request.']); exit;
     }
 
     $title = trim($_POST['title'] ?? '');
     $body = trim($_POST['body'] ?? '');
     if ($title === '' || $body === '') {
-        http_response_code(400); echo json_encode(['success' => false, 'msg' => '제목과 내용을 입력하세요.']); exit;
+        http_response_code(400); echo json_encode(['success' => false, 'msg' => 'Title and body are required.']); exit;
     }
     if (function_exists('mb_strlen')) {
         if (mb_strlen($title, 'UTF-8') > 200 || mb_strlen($body, 'UTF-8') > 10000) {
-            http_response_code(400); echo json_encode(['success' => false, 'msg' => '내용이 너무 깁니다.']); exit;
+            http_response_code(400); echo json_encode(['success' => false, 'msg' => 'Content exceeds maximum length.']); exit;
         }
     }
 
@@ -407,20 +407,20 @@ if (isset($_POST['action']) && $_POST['action'] === 'save_tip') {
         'created_at' => date('Y-m-d H:i')
     ));
     if (@file_put_contents($tipsFile, "<?php return " . var_export($tips, true) . "; ?>", LOCK_EX) === false) {
-        http_response_code(500); echo json_encode(['success' => false, 'msg' => 'TIP을 저장할 수 없습니다.']); exit;
+        http_response_code(500); echo json_encode(['success' => false, 'msg' => 'Failed to save TIP.']); exit;
     }
-    echo json_encode(['success' => true, 'msg' => 'TIP을 게시했습니다.']);
+    echo json_encode(['success' => true, 'msg' => 'TIP posted successfully.']);
     exit;
 }
 
 if (isset($_POST['action']) && in_array($_POST['action'], ['update_tip', 'delete_tip'], true)) {
     header('Content-Type: application/json; charset=utf-8');
     if (!isset($_SESSION['logged_in']) || $_SESSION['role'] !== 'admin') {
-        http_response_code(401); echo json_encode(['success' => false, 'msg' => '권한이 없습니다.']); exit;
+        http_response_code(401); echo json_encode(['success' => false, 'msg' => 'Unauthorized.']); exit;
     }
     $requestToken = $_POST['csrf_token'] ?? '';
     if (!is_string($requestToken) || !hash_equals($_SESSION['csrf_token'], $requestToken)) {
-        http_response_code(403); echo json_encode(['success' => false, 'msg' => '잘못된 요청입니다.']); exit;
+        http_response_code(403); echo json_encode(['success' => false, 'msg' => 'Invalid request.']); exit;
     }
 
     $tipId = trim($_POST['id'] ?? '');
@@ -434,37 +434,37 @@ if (isset($_POST['action']) && in_array($_POST['action'], ['update_tip', 'delete
         }
     }
     if ($tipIndex === null) {
-        http_response_code(404); echo json_encode(['success' => false, 'msg' => 'TIP을 찾을 수 없습니다.']); exit;
+        http_response_code(404); echo json_encode(['success' => false, 'msg' => 'TIP not found.']); exit;
     }
 
     if ($_POST['action'] === 'delete_tip') {
         array_splice($tips, $tipIndex, 1);
-        $message = 'TIP을 삭제했습니다.';
+        $message = 'TIP deleted.';
     } else {
         $title = trim($_POST['title'] ?? '');
         $body = trim($_POST['body'] ?? '');
         if ($title === '' || $body === '') {
-            http_response_code(400); echo json_encode(['success' => false, 'msg' => '제목과 내용을 입력하세요.']); exit;
+            http_response_code(400); echo json_encode(['success' => false, 'msg' => 'Title and body are required.']); exit;
         }
         if (function_exists('mb_strlen')) {
             if (mb_strlen($title, 'UTF-8') > 200 || mb_strlen($body, 'UTF-8') > 10000) {
-                http_response_code(400); echo json_encode(['success' => false, 'msg' => '내용이 너무 깁니다.']); exit;
+                http_response_code(400); echo json_encode(['success' => false, 'msg' => 'Content exceeds maximum length.']); exit;
             }
         }
         $tips[$tipIndex]['title'] = $title;
         $tips[$tipIndex]['body'] = $body;
         $tips[$tipIndex]['updated_at'] = date('Y-m-d H:i');
-        $message = 'TIP을 수정했습니다.';
+        $message = 'TIP updated.';
     }
 
     if (@file_put_contents($tipsFile, "<?php return " . var_export($tips, true) . "; ?>", LOCK_EX) === false) {
-        http_response_code(500); echo json_encode(['success' => false, 'msg' => 'TIP을 저장할 수 없습니다.']); exit;
+        http_response_code(500); echo json_encode(['success' => false, 'msg' => 'Failed to save TIP.']); exit;
     }
     echo json_encode(['success' => true, 'msg' => $message]);
     exit;
 }
 
-// 9. 요청 게시판 API
+// 9. Request board API
 $requestsFile = QPLUS_REQUESTS_FILE;
 if (!file_exists($requestsFile)) {
     @file_put_contents($requestsFile, "<?php return array(); ?>");
@@ -483,20 +483,20 @@ if (isset($_GET['action']) && $_GET['action'] === 'requests') {
 if (isset($_POST['action']) && $_POST['action'] === 'save_request') {
     header('Content-Type: application/json; charset=utf-8');
     if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
-        http_response_code(401); echo json_encode(['success' => false, 'msg' => '로그인이 필요합니다.']); exit;
+        http_response_code(401); echo json_encode(['success' => false, 'msg' => 'Login required.']); exit;
     }
     $requestToken = $_POST['csrf_token'] ?? '';
     if (!is_string($requestToken) || !hash_equals($_SESSION['csrf_token'], $requestToken)) {
-        http_response_code(403); echo json_encode(['success' => false, 'msg' => '잘못된 요청입니다.']); exit;
+        http_response_code(403); echo json_encode(['success' => false, 'msg' => 'Invalid request.']); exit;
     }
 
     $title = trim($_POST['title'] ?? '');
     $body = trim($_POST['body'] ?? '');
     if ($title === '' || $body === '') {
-        http_response_code(400); echo json_encode(['success' => false, 'msg' => '제목과 내용을 입력하세요.']); exit;
+        http_response_code(400); echo json_encode(['success' => false, 'msg' => 'Title and body are required.']); exit;
     }
     if (function_exists('mb_strlen') && (mb_strlen($title, 'UTF-8') > 200 || mb_strlen($body, 'UTF-8') > 10000)) {
-        http_response_code(400); echo json_encode(['success' => false, 'msg' => '내용이 너무 깁니다.']); exit;
+        http_response_code(400); echo json_encode(['success' => false, 'msg' => 'Content exceeds maximum length.']); exit;
     }
 
     $requests = include $requestsFile;
@@ -507,23 +507,23 @@ if (isset($_POST['action']) && $_POST['action'] === 'save_request') {
         'body' => $body,
         'role' => $_SESSION['role'],
         'created_at' => date('Y-m-d H:i'),
-        'status' => '접수'
+        'status' => 'Received'
     ));
     if (@file_put_contents($requestsFile, "<?php return " . var_export($requests, true) . "; ?>", LOCK_EX) === false) {
-        http_response_code(500); echo json_encode(['success' => false, 'msg' => '요청을 저장할 수 없습니다.']); exit;
+        http_response_code(500); echo json_encode(['success' => false, 'msg' => 'Failed to save request.']); exit;
     }
-    echo json_encode(['success' => true, 'msg' => '요청을 등록했습니다.']);
+    echo json_encode(['success' => true, 'msg' => 'Request submitted successfully.']);
     exit;
 }
 
 if (isset($_POST['action']) && $_POST['action'] === 'delete_request') {
     header('Content-Type: application/json; charset=utf-8');
     if (!isset($_SESSION['logged_in']) || $_SESSION['role'] !== 'admin') {
-        http_response_code(401); echo json_encode(['success' => false, 'msg' => '권한이 없습니다.']); exit;
+        http_response_code(401); echo json_encode(['success' => false, 'msg' => 'Unauthorized.']); exit;
     }
     $requestToken = $_POST['csrf_token'] ?? '';
     if (!is_string($requestToken) || !hash_equals($_SESSION['csrf_token'], $requestToken)) {
-        http_response_code(403); echo json_encode(['success' => false, 'msg' => '잘못된 요청입니다.']); exit;
+        http_response_code(403); echo json_encode(['success' => false, 'msg' => 'Invalid request.']); exit;
     }
 
     $requestId = trim($_POST['id'] ?? '');
@@ -537,18 +537,18 @@ if (isset($_POST['action']) && $_POST['action'] === 'delete_request') {
         }
     }
     if ($requestIndex === null) {
-        http_response_code(404); echo json_encode(['success' => false, 'msg' => '요청을 찾을 수 없습니다.']); exit;
+        http_response_code(404); echo json_encode(['success' => false, 'msg' => 'Request not found.']); exit;
     }
 
     array_splice($requests, $requestIndex, 1);
     if (@file_put_contents($requestsFile, "<?php return " . var_export($requests, true) . "; ?>", LOCK_EX) === false) {
-        http_response_code(500); echo json_encode(['success' => false, 'msg' => '요청을 삭제할 수 없습니다.']); exit;
+        http_response_code(500); echo json_encode(['success' => false, 'msg' => 'Failed to delete request.']); exit;
     }
-    echo json_encode(['success' => true, 'msg' => '요청을 삭제했습니다.']);
+    echo json_encode(['success' => true, 'msg' => 'Request deleted.']);
     exit;
 }
 
-// 10. 폴더/파일 목록 조회 API
+// 10. Directory & file listing API
 if (isset($_GET['action']) && $_GET['action'] === 'list') {
     ini_set('display_errors', 0); error_reporting(0);
     header('Content-Type: application/json; charset=utf-8');
@@ -638,7 +638,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'list') {
 
 if (isset($_GET['logout'])) { removeSessionPresence(); session_destroy(); header("Location: /"); exit; }
 
-// 로그인 처리
+// Authentication login handler
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['action'])) {
     $now = time();
     $loginFails = $_SESSION['login_fail_count'] ?? 0;
@@ -646,7 +646,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['action'])) {
 
     if ($loginFails >= 5 && ($now - $lastFailTime) < 60) {
         $remaining = 60 - ($now - $lastFailTime);
-        $error_msg = "로그인 시도 횟수를 초과했습니다. {$remaining}초 후 다시 시도해주세요.";
+        $error_msg = "Too many login attempts. Please try again after {$remaining}s.";
     } else {
         if ($now - $lastFailTime >= 60) {
             $_SESSION['login_fail_count'] = 0;
@@ -674,17 +674,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['action'])) {
         } else {
             $_SESSION['login_fail_count'] = ($_SESSION['login_fail_count'] ?? 0) + 1;
             $_SESSION['login_last_fail_time'] = $now;
-            $error_msg = "비밀번호가 일치하지 않습니다.";
+            $error_msg = "Invalid password.";
         }
     }
 }
 
-// 로그인 전 화면
+// Render login view
 if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
     $isAdminLogin = isset($_GET['admin']) && $_GET['admin'] === '1';
 ?>
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="en">
 <head>
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>LOGIN - qplus</title>
     <link rel="icon" type="image/png" href="/assets/qplus_symbol.png">
@@ -710,14 +710,14 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
         <?php if (isset($error_msg)) echo "<div class='error'>{$error_msg}</div>"; ?>
         <form method="POST">
             <input type="hidden" name="role" value="<?php echo $isAdminLogin ? 'admin' : 'guest'; ?>">
-            <input type="password" name="password" placeholder="<?php echo $isAdminLogin ? '관리자 비밀번호' : '비밀번호'; ?>" required autofocus>
+            <input type="password" name="password" placeholder="<?php echo $isAdminLogin ? 'Admin password' : 'Password'; ?>" required autofocus>
             <button type="submit">LOGIN</button>
         </form>
     </div>
     <?php if ($isAdminLogin): ?>
-        <a class="admin-entry" href="/">게스트 로그인</a>
+        <a class="admin-entry" href="/">Guest Login</a>
     <?php else: ?>
-        <a class="admin-entry" href="?admin=1">관리자 로그인</a>
+        <a class="admin-entry" href="?admin=1">Admin Login</a>
     <?php endif; ?>
 </body>
 </html>

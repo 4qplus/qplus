@@ -4,9 +4,10 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
     exit;
 }
 $isAdmin = ($_SESSION['role'] ?? 'guest') === 'admin';
+$serverLang = $config['language'] ?? 'en';
 ?>
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="<?php echo htmlspecialchars($serverLang); ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -400,6 +401,29 @@ $isAdmin = ($_SESSION['role'] ?? 'guest') === 'admin';
         .role-pill.guest {
             background: var(--bg-subtle);
             color: var(--text-secondary);
+        }
+
+        
+        .lang-toggle-btn {
+            height: 32px;
+            padding: 0 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--bg-surface);
+            color: var(--text-primary);
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            letter-spacing: 0.5px;
+            transition: all 0.15s;
+        }
+        .lang-toggle-btn:hover {
+            background: var(--brand-blue-soft);
+            border-color: var(--brand-blue);
+            color: var(--brand-blue);
         }
 
         .btn-logout {
@@ -1190,6 +1214,7 @@ $isAdmin = ($_SESSION['role'] ?? 'guest') === 'admin';
 <body>
     <script>
         const USER_ROLE = <?php echo json_encode($_SESSION["role"] ?? "guest"); ?>;
+        const SERVER_LANG = <?php echo json_encode($serverLang); ?>;
         const CSRF_TOKEN = <?php echo json_encode($_SESSION['csrf_token']); ?>;
     </script>
 
@@ -1206,67 +1231,67 @@ $isAdmin = ($_SESSION['role'] ?? 'guest') === 'admin';
             <div class="upload-cta-wrap">
                 <button class="btn-upload-cta" type="button" onclick="toggleUploadDropdown(event)">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-                    <span>올리기</span>
+                    <span data-i18n="upload">올리기</span>
                 </button>
                 <div class="upload-dropdown" id="upload-dropdown">
                     <button type="button" onclick="triggerUploadFile()">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/></svg>
-                        <span>파일 업로드</span>
+                        <span data-i18n="upload_file">파일 업로드</span>
                     </button>
                     <button type="button" onclick="triggerUploadFolder()">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
-                        <span>폴더 업로드</span>
+                        <span data-i18n="upload_folder">폴더 업로드</span>
                     </button>
                     <button type="button" onclick="createFolder()">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-                        <span>새 폴더 만들기</span>
+                        <span data-i18n="new_folder">새 폴더 만들기</span>
                     </button>
                 </div>
             </div>
 
             <div class="sidebar-scroll">
-                <div class="nav-group-label">드라이브</div>
+                <div class="nav-group-label" data-i18n="drive">드라이브</div>
                 <button class="nav-item active" id="nav-drive-root" onclick="openDriveRoot()">
                     <span class="nav-icon">
                         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
                     </span>
-                    <span class="nav-label">내 드라이브 (전체)</span>
+                    <span class="nav-label" data-i18n="my_drive">내 드라이브 (전체)</span>
                 </button>
                 <div id="sidebar-root-folders"></div>
 
                 <div class="nav-divider"></div>
-                <div class="nav-group-label">워크스페이스</div>
+                <div class="nav-group-label" data-i18n="workspace">워크스페이스</div>
                 <button class="nav-item" id="nav-tips" onclick="switchAppView('tips')">
                     <span class="nav-icon">
                         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
                     </span>
-                    <span class="nav-label">Tips & 공지</span>
+                    <span class="nav-label" data-i18n="tips">Tips & 공지</span>
                 </button>
                 <button class="nav-item" id="nav-requests" onclick="switchAppView('requests')">
                     <span class="nav-icon">
                         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                     </span>
-                    <span class="nav-label">요청사항</span>
+                    <span class="nav-label" data-i18n="requests">요청사항</span>
                 </button>
                 <?php if ($isAdmin): ?>
                 <button class="nav-item" id="nav-settings" onclick="switchAppView('settings')">
                     <span class="nav-icon">
                         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
                     </span>
-                    <span class="nav-label">관리자 설정</span>
+                    <span class="nav-label" data-i18n="settings">관리자 설정</span>
                 </button>
                 <?php endif; ?>
             </div>
 
             <div class="sidebar-storage">
                 <div class="storage-title-row">
-                    <span>스토리지 용량</span>
+                    <span data-i18n="storage_cap">스토리지 용량</span>
                     <span id="sidebar-disk-pct">0%</span>
                 </div>
                 <div class="storage-bar-bg">
                     <div class="storage-bar-fill" id="sidebar-disk-bar"></div>
                 </div>
-                <div class="storage-sub" id="sidebar-disk-text">용량 확인 중...</div>
+                <div class="storage-sub" id="sidebar-disk-text" data-i18n="storage_checking">용량 확인 중...</div>
             </div>
         </aside>
 
@@ -1281,21 +1306,22 @@ $isAdmin = ($_SESSION['role'] ?? 'guest') === 'admin';
                         <span class="search-icon">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                         </span>
-                        <input type="text" id="file-search-input" placeholder="현재 폴더 내 파일·폴더 검색..." oninput="handleSearchInput()">
+                        <input type="text" id="file-search-input" placeholder="현재 폴더 내 파일·폴더 검색..." data-i18n-ph="search_ph" oninput="handleSearchInput()">
                         <button type="button" class="search-clear" id="search-clear-btn" onclick="clearSearch()">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                         </button>
                     </div>
                 </div>
                 <div class="topbar-right">
-                    <div class="session-pill" title="현재 활동 중인 접속자 수">
+                    <button type="button" class="lang-toggle-btn" id="lang-toggle-btn" onclick="toggleLanguage()" title="Language / 언어 전환">EN</button>
+                    <div class="session-pill" title="Active users">
                         <span class="session-dot"></span>
-                        <span>접속 <strong id="active-session-number">-</strong>명</span>
+                        <span><span data-i18n="online">접속</span> <strong id="active-session-number">-</strong><span data-i18n="online_unit">명</span></span>
                     </div>
                     <span class="role-pill <?php echo $isAdmin ? '' : 'guest'; ?>">
                         <?php echo $isAdmin ? 'ADMIN' : 'GUEST'; ?>
                     </span>
-                    <button type="button" class="btn-logout" onclick="location.href='?logout=1'">로그아웃</button>
+                    <button type="button" class="btn-logout" onclick="location.href='?logout=1'" data-i18n="logout">로그아웃</button>
                 </div>
             </header>
 
@@ -1306,7 +1332,7 @@ $isAdmin = ($_SESSION['role'] ?? 'guest') === 'admin';
                         <div class="breadcrumb-wrap">
                             <button class="btn-up" id="btn-go-up" style="display:none;" onclick="goUpDirectory()">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-                                <span>상위</span>
+                                <span data-i18n="up">상위</span>
                             </button>
                             <div class="breadcrumb-list" id="breadcrumb-list"></div>
                             <div class="current-path-badge" id="current-path-badge" title="현재 서버 디렉터리 경로">
@@ -1318,24 +1344,24 @@ $isAdmin = ($_SESSION['role'] ?? 'guest') === 'admin';
                         <div class="toolbar-actions">
                             <button type="button" class="btn-new-folder" onclick="openNewFolderModal()" title="현재 위치에 새 폴더를 만듭니다">
                                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
-                                <span>새 폴더</span>
+                                <span data-i18n="new_folder">새 폴더</span>
                             </button>
                             <div class="selection-bar" id="selection-bar">
                                 <span class="selection-count" id="selection-count">0개 선택</span>
-                                <button type="button" class="t-btn primary" onclick="downloadSelectedFiles()">다운로드</button>
+                                <button type="button" class="t-btn primary" onclick="downloadSelectedFiles()" data-i18n="download">다운로드</button>
                                 <?php if ($isAdmin): ?>
-                                <button type="button" class="t-btn" onclick="copySelectedForMove()">이동 복사</button>
-                                <button type="button" class="t-btn danger" onclick="deleteSelectedFiles()">삭제</button>
+                                <button type="button" class="t-btn" onclick="copySelectedForMove()" data-i18n="move_copy">이동 복사</button>
+                                <button type="button" class="t-btn danger" onclick="deleteSelectedFiles()" data-i18n="delete">삭제</button>
                                 <?php endif; ?>
                             </div>
                             <?php if ($isAdmin): ?>
                             <button type="button" class="t-btn" id="btn-paste-move" style="display:none;" onclick="pasteMovedItems()">여기로 이동 (<span id="move-clip-count">0</span>)</button>
                             <?php endif; ?>
-                            <button type="button" class="t-btn" onclick="toggleSelectAll()">전체선택</button>
+                            <button type="button" class="t-btn" onclick="toggleSelectAll()" data-i18n="select_all">전체선택</button>
                             <select class="sort-select" id="sort-select" onchange="renderCurrentItems()">
-                                <option value="name">이름순</option>
-                                <option value="mtime_desc">최신순</option>
-                                <option value="size_desc">용량순</option>
+                                <option value="name" data-i18n="sort_name">이름순</option>
+                                <option value="mtime_desc" data-i18n="sort_date">최신순</option>
+                                <option value="size_desc" data-i18n="sort_size">용량순</option>
                             </select>
                             <div class="view-toggle">
                                 <button type="button" id="btn-view-list" onclick="setViewMode('list')" title="리스트 보기">
@@ -1351,12 +1377,12 @@ $isAdmin = ($_SESSION['role'] ?? 'guest') === 'admin';
                     <div class="drive-body" id="drive-drop-area">
                         <div class="drag-overlay" id="drag-overlay">
                             <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                            <div class="drag-overlay-text">여기에 파일이나 폴더를 놓아 업로드하세요</div>
-                            <div class="drag-overlay-sub">현재 위치에 바로 저장됩니다</div>
+                            <div class="drag-overlay-text" data-i18n="drag_overlay">여기에 파일이나 폴더를 놓아 업로드하세요</div>
+                            <div class="drag-overlay-sub" data-i18n="drag_overlay_sub">현재 위치에 바로 저장됩니다</div>
                         </div>
 
                         <div class="drive-notice">
-                            <span>화면 어디든 파일·폴더를 끌어다 놓으면 업로드됩니다. (실행 파일 .exe, .cmd 등 공유 시 실행 주의)</span>
+                            <span data-i18n="drag_hint">화면 어디든 파일·폴더를 끌어다 놓으면 업로드됩니다. (실행 파일 .exe, .cmd 등 공유 시 실행 주의)</span>
                             <span id="upload-status-inline" style="font-weight:700;"></span>
                         </div>
 
@@ -1370,14 +1396,14 @@ $isAdmin = ($_SESSION['role'] ?? 'guest') === 'admin';
                         <div class="page-inner">
                             <h2 class="page-heading">
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-                                <span>Tips & 공지사항</span>
+                                <span data-i18n="tips_title">Tips & 공지사항</span>
                             </h2>
                             <?php if ($isAdmin): ?>
                             <form class="surface-card" onsubmit="saveTip(event)">
                                 <input type="hidden" id="tip-edit-id" value="">
-                                <input class="form-input" id="tip-title-input" type="text" maxlength="200" placeholder="공지 또는 TIP 제목" required>
-                                <textarea class="form-textarea" id="tip-body-input" maxlength="10000" placeholder="사용법이나 공지 내용을 입력하세요." required></textarea>
-                                <button class="btn-primary" id="tip-submit-btn" type="submit">TIP 게시</button>
+                                <input class="form-input" id="tip-title-input" type="text" maxlength="200" placeholder="공지 또는 TIP 제목" data-i18n-ph="tip_title_ph" required>
+                                <textarea class="form-textarea" id="tip-body-input" maxlength="10000" placeholder="사용법이나 공지 내용을 입력하세요." data-i18n-ph="tip_body_ph" required></textarea>
+                                <button class="btn-primary" id="tip-submit-btn" type="submit" data-i18n="tip_post">TIP 게시</button>
                                 <button class="btn-secondary" id="tip-cancel-btn" type="button" onclick="cancelTipEdit()" style="display:none;margin-left:8px;">수정 취소</button>
                                 <span id="tip-save-status" style="font-size:12px;margin-left:10px;color:var(--text-muted);"></span>
                             </form>
@@ -1393,12 +1419,12 @@ $isAdmin = ($_SESSION['role'] ?? 'guest') === 'admin';
                         <div class="page-inner">
                             <h2 class="page-heading">
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                                <span>요청사항 게시판</span>
+                                <span data-i18n="req_title">요청사항 게시판</span>
                             </h2>
                             <form class="surface-card" onsubmit="saveRequest(event)">
-                                <input class="form-input" id="request-title-input" type="text" maxlength="200" placeholder="요청 제목" required>
-                                <textarea class="form-textarea" id="request-body-input" maxlength="10000" placeholder="필요한 프로그램, 자료 또는 개선 요청사항을 입력하세요." required></textarea>
-                                <button class="btn-primary" type="submit">요청 등록</button>
+                                <input class="form-input" id="request-title-input" type="text" maxlength="200" placeholder="요청 제목" data-i18n-ph="req_title_ph" required>
+                                <textarea class="form-textarea" id="request-body-input" maxlength="10000" placeholder="필요한 프로그램, 자료 또는 개선 요청사항을 입력하세요." data-i18n-ph="req_body_ph" required></textarea>
+                                <button class="btn-primary" type="submit" data-i18n="req_post">요청 등록</button>
                                 <span id="request-save-status" style="font-size:12px;margin-left:10px;color:var(--text-muted);"></span>
                             </form>
                             <div id="request-list"><div class="empty-state">불러오는 중...</div></div>
@@ -1416,15 +1442,15 @@ $isAdmin = ($_SESSION['role'] ?? 'guest') === 'admin';
                                 <span>관리자 설정</span>
                             </h2>
                             <div class="settings-tabs">
-                                <button class="settings-tab-btn active" onclick="switchCpTab('sys-monitor', this)">스토리지 및 시스템</button>
-                                <button class="settings-tab-btn" onclick="switchCpTab('sys-folder-auth', this)">폴더별 보안</button>
-                                <button class="settings-tab-btn" onclick="switchCpTab('sys-security', this)">계정 비밀번호</button>
-                                <button class="settings-tab-btn" onclick="switchCpTab('sys-presence', this)">접속 현황</button>
+                                <button class="settings-tab-btn active" onclick="switchCpTab('sys-monitor', this)" data-i18n="tab_storage">스토리지 및 시스템</button>
+                                <button class="settings-tab-btn" onclick="switchCpTab('sys-folder-auth', this)" data-i18n="tab_folders">폴더별 보안</button>
+                                <button class="settings-tab-btn" onclick="switchCpTab('sys-security', this)" data-i18n="tab_passwords">계정 비밀번호</button>
+                                <button class="settings-tab-btn" onclick="switchCpTab('sys-presence', this)" data-i18n="tab_presence">접속 현황</button>
                             </div>
 
                             <div id="sys-monitor" class="cp-section active">
                                 <div class="surface-card">
-                                    <h3>드라이브 상태 (D:)</h3>
+                                    <h3 data-i18n="drive_status">드라이브 상태 (D:)</h3>
                                     <div class="storage-bar-bg" style="height:14px;margin-bottom:10px;">
                                         <div class="storage-bar-fill" id="disk-bar" style="font-size:10px;color:#fff;display:flex;align-items:center;justify-content:flex-end;padding-right:6px;">0%</div>
                                     </div>
@@ -1435,23 +1461,23 @@ $isAdmin = ($_SESSION['role'] ?? 'guest') === 'admin';
                                 </div>
 
                                 <div class="surface-card">
-                                    <h3>시스템 정리 (임시 업로드 캐시)</h3>
+                                    <h3 data-i18n="cleanup_title">시스템 정리 (임시 업로드 캐시)</h3>
                                     <p style="font-size:13px;color:var(--text-muted);margin:0 0 14px;">업로드 취소나 오류로 남겨진 임시 파일 조각(.tmp)을 삭제하여 용량을 확보합니다.</p>
-                                    <button class="btn-danger-solid" type="button" onclick="clearTempData()">임시 데이터 정리</button>
+                                    <button class="btn-danger-solid" type="button" onclick="clearTempData()" data-i18n="cleanup_btn">임시 데이터 정리</button>
                                     <p id="clear-temp-msg" style="margin:12px 0 0;font-size:13px;font-weight:600;"></p>
                                 </div>
                             </div>
 
                             <div id="sys-folder-auth" class="cp-section">
                                 <div class="surface-card">
-                                    <h3>폴더별 비밀번호 설정 / 해제</h3>
+                                    <h3 data-i18n="folder_pw_title">폴더별 비밀번호 설정 / 해제</h3>
                                     <p style="font-size:13px;color:var(--text-muted);margin:0 0 14px;">대상 폴더 경로를 입력하고 비밀번호를 지정하세요. (비밀번호 공란 저장 시 잠금 해제)</p>
                                     <form id="folder-auth-form" onsubmit="saveFolderPassword(event)">
                                         <label style="display:block;font-size:12.5px;font-weight:700;margin-bottom:6px;">대상 폴더 경로</label>
                                         <input class="form-input" type="text" id="target_folder_name" placeholder="예: 컴퓨터 계열/운영부" required>
                                         <label style="display:block;font-size:12.5px;font-weight:700;margin-bottom:6px;">폴더 비밀번호</label>
                                         <input class="form-input" type="password" id="target_folder_pw" placeholder="새 비밀번호 입력 (해제 시 비움)">
-                                        <button type="submit" class="btn-primary">설정 저장</button>
+                                        <button type="submit" class="btn-primary" data-i18n="save_settings">설정 저장</button>
                                     </form>
                                     <p id="folder-auth-msg" style="margin:12px 0 0;font-size:13px;font-weight:600;"></p>
                                 </div>
@@ -1459,7 +1485,7 @@ $isAdmin = ($_SESSION['role'] ?? 'guest') === 'admin';
 
                             <div id="sys-security" class="cp-section">
                                 <div class="surface-card">
-                                    <h3>계정 비밀번호 변경</h3>
+                                    <h3 data-i18n="account_pw_title">계정 비밀번호 변경</h3>
                                     <form id="pwd-form" onsubmit="changePassword(event)">
                                         <label style="display:block;font-size:12.5px;font-weight:700;margin-bottom:6px;">변경 대상</label>
                                         <select class="form-select" id="target_role">
@@ -1470,7 +1496,7 @@ $isAdmin = ($_SESSION['role'] ?? 'guest') === 'admin';
                                         <input class="form-input" type="password" id="old_pw" required>
                                         <label style="display:block;font-size:12.5px;font-weight:700;margin-bottom:6px;">새 비밀번호</label>
                                         <input class="form-input" type="password" id="new_pw" required>
-                                        <button type="submit" class="btn-primary">비밀번호 변경</button>
+                                        <button type="submit" class="btn-primary" data-i18n="change_pw_btn">비밀번호 변경</button>
                                     </form>
                                     <p id="pwd-msg" style="margin:12px 0 0;font-size:13px;font-weight:600;"></p>
                                 </div>
@@ -1478,7 +1504,7 @@ $isAdmin = ($_SESSION['role'] ?? 'guest') === 'admin';
 
                             <div id="sys-presence" class="cp-section">
                                 <div class="surface-card">
-                                    <h3>현재 접속 세션</h3>
+                                    <h3 data-i18n="presence_title">현재 접속 세션</h3>
                                     <p style="font-size:13px;color:var(--text-muted);margin:0 0 12px;">최근 20분 이내 활동한 접속 기록입니다.</p>
                                     <div style="overflow-x:auto;">
                                         <table style="width:100%;border-collapse:collapse;text-align:left;font-size:13px;">
@@ -1543,12 +1569,12 @@ $isAdmin = ($_SESSION['role'] ?? 'guest') === 'admin';
     <!-- New Folder Modal -->
     <div id="new-folder-modal" class="modal-overlay" style="display:none;background:rgba(15,23,42,0.55);z-index:1006;" onclick="closeNewFolderModal()">
         <div class="folder-auth-card" onclick="event.stopPropagation()">
-            <h3 class="folder-auth-title">새 폴더 만들기</h3>
-            <p class="folder-auth-sub" id="new-folder-modal-sub">현재 위치에 새 폴더를 생성합니다.</p>
-            <input type="text" class="form-input" id="new-folder-input-name" placeholder="폴더 이름 입력" maxlength="100" style="margin-bottom:16px;" onkeydown="if(event.key==='Enter') submitCreateFolder(); if(event.key==='Escape') closeNewFolderModal();">
+            <h3 class="folder-auth-title" data-i18n="new_folder_title">새 폴더 만들기</h3>
+            <p class="folder-auth-sub" id="new-folder-modal-sub" data-i18n="new_folder_sub">현재 위치에 새 폴더를 생성합니다.</p>
+            <input type="text" class="form-input" id="new-folder-input-name" placeholder="폴더 이름 입력" data-i18n-ph="folder_name_ph" maxlength="100" style="margin-bottom:16px;" onkeydown="if(event.key==='Enter') submitCreateFolder(); if(event.key==='Escape') closeNewFolderModal();">
             <div class="folder-auth-btns">
-                <button type="button" class="btn-secondary" onclick="closeNewFolderModal()">취소</button>
-                <button type="button" class="btn-primary" onclick="submitCreateFolder()">생성</button>
+                <button type="button" class="btn-secondary" onclick="closeNewFolderModal()" data-i18n="cancel">취소</button>
+                <button type="button" class="btn-primary" onclick="submitCreateFolder()" data-i18n="create">생성</button>
             </div>
         </div>
     </div>
@@ -1556,17 +1582,276 @@ $isAdmin = ($_SESSION['role'] ?? 'guest') === 'admin';
     <!-- Folder Auth Modal -->
     <div id="folder-auth-modal">
         <div class="folder-auth-card">
-            <h3 class="folder-auth-title" id="folder-auth-modal-title">보안 폴더 접근</h3>
-            <p class="folder-auth-sub">이 폴더는 비밀번호로 보호되어 있습니다.</p>
-            <input type="password" class="form-input" id="folder-input-password" placeholder="비밀번호 입력" style="text-align:center;" onkeydown="if(event.key==='Enter') submitFolderAuth()">
+            <h3 class="folder-auth-title" id="folder-auth-modal-title" data-i18n="sec_folder_title">보안 폴더 접근</h3>
+            <p class="folder-auth-sub" data-i18n="sec_folder_sub">이 폴더는 비밀번호로 보호되어 있습니다.</p>
+            <input type="password" class="form-input" id="folder-input-password" placeholder="비밀번호 입력" data-i18n-ph="folder_pw_input_ph" style="text-align:center;" onkeydown="if(event.key==='Enter') submitFolderAuth()">
             <div class="folder-auth-btns">
-                <button type="button" class="btn-secondary" onclick="closeFolderAuthModal()">취소</button>
-                <button type="button" class="btn-primary" onclick="submitFolderAuth()">확인</button>
+                <button type="button" class="btn-secondary" onclick="closeFolderAuthModal()" data-i18n="cancel">취소</button>
+                <button type="button" class="btn-primary" onclick="submitFolderAuth()" data-i18n="confirm">확인</button>
             </div>
         </div>
     </div>
 
     <script>
+        const I18N = {
+            en: {
+                upload: "Upload",
+                upload_file: "Upload File",
+                upload_folder: "Upload Folder",
+                new_folder: "New Folder",
+                drive: "Drive",
+                my_drive: "My Drive (All)",
+                workspace: "Workspace",
+                tips: "Tips & Notices",
+                requests: "Requests",
+                settings: "Admin Settings",
+                storage_cap: "Storage Capacity",
+                storage_checking: "Checking storage...",
+                search_ph: "Search files & folders in current directory...",
+                online: "Online",
+                online_unit: "",
+                logout: "Logout",
+                up: "Up",
+                current_path_title: "Current server directory path",
+                sel_count: "{0} selected",
+                download: "Download",
+                move_copy: "Move / Copy",
+                delete: "Delete",
+                move_here: "Move here ({0})",
+                select_all: "Select All",
+                sort_name: "Name",
+                sort_date: "Date Modified",
+                sort_size: "Size",
+                list_view: "List View",
+                grid_view: "Grid View",
+                drag_overlay: "Drop files or folders here to upload",
+                drag_overlay_sub: "Files will be saved in current directory",
+                drag_hint: "Drag and drop files/folders anywhere to upload. (Caution when sharing .exe, .cmd)",
+                tips_title: "Tips & Announcements",
+                tip_title_ph: "Notice or TIP title",
+                tip_body_ph: "Enter instructions or announcement details...",
+                tip_post: "Post TIP",
+                tip_update: "Save Changes",
+                tip_cancel: "Cancel",
+                req_title: "Request Board",
+                req_title_ph: "Request title",
+                req_body_ph: "Describe software, files, or assistance needed...",
+                req_post: "Submit Request",
+                loading: "Loading...",
+                tab_storage: "Storage & System",
+                tab_folders: "Folder Security",
+                tab_passwords: "Account Passwords",
+                tab_presence: "Active Sessions",
+                drive_status: "Drive Status (D:)",
+                disk_used: "Used: {0}",
+                disk_free: "Free: {0} / Total: {1}",
+                cleanup_title: "System Cleanup (Temporary Upload Cache)",
+                cleanup_desc: "Deletes orphaned upload chunks (.tmp) from interrupted or cancelled uploads.",
+                cleanup_btn: "Clean Temporary Files",
+                folder_pw_title: "Folder Password Protection",
+                folder_pw_desc: "Specify folder path and set a password. (Leave empty to remove password)",
+                folder_target_lbl: "Target Folder Path",
+                folder_target_ph: "e.g. Finance/Reports",
+                folder_pw_lbl: "Folder Password",
+                folder_pw_ph: "Enter new password (leave empty to clear)",
+                save_settings: "Save Settings",
+                account_pw_title: "Change Account Password",
+                target_role_lbl: "Target Account",
+                role_admin: "Admin Account (ADMIN)",
+                role_guest: "Guest Account (GUEST)",
+                current_admin_pw: "Current Admin Password",
+                new_pw_lbl: "New Password",
+                change_pw_btn: "Change Password",
+                presence_title: "Active User Sessions",
+                presence_desc: "Sessions with activity in the last 20 minutes.",
+                col_account: "Account",
+                col_ip: "IP Address",
+                col_login_time: "Login Time",
+                col_last_act: "Last Activity",
+                col_browser: "Browser",
+                new_folder_title: "Create New Folder",
+                new_folder_sub: "Create a new folder in the current directory.",
+                folder_name_ph: "Enter folder name",
+                cancel: "Cancel",
+                create: "Create",
+                sec_folder_title: "Protected Folder",
+                sec_folder_sub: "This folder is protected with a password.",
+                folder_pw_input_ph: "Enter password",
+                confirm: "Confirm",
+                empty_folder: "No files or folders in this directory.",
+                locked_folder: "Locked Folder",
+                folder: "Folder",
+                col_name: "Name",
+                col_size: "Size",
+                col_date: "Date Modified",
+                col_action: "Action",
+                quick_dl: "Download",
+                open_folder: "Open folder",
+                session_expired: "Session expired. Please log in again.",
+                no_sel_download: "Please select files to download.",
+                no_sel_delete: "Please select files to delete.",
+                confirm_delete: "Are you sure you want to delete {0} item(s)?",
+                items_copied_move: "Selected {0} item(s) to move. Go to destination and click 'Move here'.",
+                folder_name_empty: "Please enter a folder name."
+            },
+            ko: {
+                upload: "올리기",
+                upload_file: "파일 업로드",
+                upload_folder: "폴더 업로드",
+                new_folder: "새 폴더 만들기",
+                drive: "드라이브",
+                my_drive: "내 드라이브 (전체)",
+                workspace: "워크스페이스",
+                tips: "Tips & 공지",
+                requests: "요청사항",
+                settings: "관리자 설정",
+                storage_cap: "스토리지 용량",
+                storage_checking: "용량 확인 중...",
+                search_ph: "현재 폴더 내 파일·폴더 검색...",
+                online: "접속",
+                online_unit: "명",
+                logout: "로그아웃",
+                up: "상위",
+                current_path_title: "현재 서버 디렉터리 경로",
+                sel_count: "{0}개 선택",
+                download: "다운로드",
+                move_copy: "이동 복사",
+                delete: "삭제",
+                move_here: "여기로 이동 ({0})",
+                select_all: "전체선택",
+                sort_name: "이름순",
+                sort_date: "최신순",
+                sort_size: "용량순",
+                list_view: "리스트 보기",
+                grid_view: "그리드 보기",
+                drag_overlay: "여기에 파일이나 폴더를 놓아 업로드하세요",
+                drag_overlay_sub: "현재 위치에 바로 저장됩니다",
+                drag_hint: "화면 어디든 파일·폴더를 끌어다 놓으면 업로드됩니다. (실행 파일 .exe, .cmd 등 공유 시 실행 주의)",
+                tips_title: "Tips & 공지사항",
+                tip_title_ph: "공지 또는 TIP 제목",
+                tip_body_ph: "사용법이나 공지 내용을 입력하세요...",
+                tip_post: "TIP 게시",
+                tip_update: "수정 저장",
+                tip_cancel: "취소",
+                req_title: "요청사항 게시판",
+                req_title_ph: "요청 제목",
+                req_body_ph: "필요한 프로그램, 자료 또는 요청 내용을 적어주세요...",
+                req_post: "요청 등록",
+                loading: "불러오는 중...",
+                tab_storage: "스토리지 및 시스템",
+                tab_folders: "폴더별 보안",
+                tab_passwords: "계정 비밀번호",
+                tab_presence: "접속 현황",
+                drive_status: "드라이브 상태 (D:)",
+                disk_used: "사용 중: {0}",
+                disk_free: "남은 공간: {0} / 총 {1}",
+                cleanup_title: "시스템 정리 (임시 업로드 캐시)",
+                cleanup_desc: "업로드 취소나 오류로 남겨진 임시 파일 조각(.tmp)을 삭제합니다.",
+                cleanup_btn: "임시 데이터 정리",
+                folder_pw_title: "폴더별 비밀번호 설정 / 해제",
+                folder_pw_desc: "대상 폴더 경로를 입력하고 비밀번호를 지정하세요. (비밀번호를 비우면 잠금 해제)",
+                folder_target_lbl: "대상 폴더 경로",
+                folder_target_ph: "예: 컴퓨터 계열/운영부",
+                folder_pw_lbl: "폴더 비밀번호",
+                folder_pw_ph: "새 비밀번호 입력 (해제 시 비움)",
+                save_settings: "설정 저장",
+                account_pw_title: "계정 비밀번호 변경",
+                target_role_lbl: "변경 대상",
+                role_admin: "관리자 계정 (ADMIN)",
+                role_guest: "게스트 계정 (GUEST)",
+                current_admin_pw: "현재 관리자 비밀번호",
+                new_pw_lbl: "새 비밀번호",
+                change_pw_btn: "비밀번호 변경",
+                presence_title: "현재 접속 세션",
+                presence_desc: "최근 20분 이내 활동한 접속 기록입니다.",
+                col_account: "계정",
+                col_ip: "접속 IP",
+                col_login_time: "로그인 시각",
+                col_last_act: "최근 활동",
+                col_browser: "브라우저",
+                new_folder_title: "새 폴더 만들기",
+                new_folder_sub: "현재 위치에 새 폴더를 생성합니다.",
+                folder_name_ph: "폴더 이름 입력",
+                cancel: "취소",
+                create: "생성",
+                sec_folder_title: "보안 폴더 접근",
+                sec_folder_sub: "이 폴더는 비밀번호로 보호되어 있습니다.",
+                folder_pw_input_ph: "비밀번호 입력",
+                confirm: "확인",
+                empty_folder: "표시할 파일이나 폴더가 없습니다.",
+                locked_folder: "잠금 폴더",
+                folder: "폴더",
+                col_name: "이름",
+                col_size: "크기",
+                col_date: "수정일",
+                col_action: "작업",
+                quick_dl: "다운로드",
+                open_folder: "폴더 열기",
+                session_expired: "세션이 만료되었습니다. 다시 로그인해주세요.",
+                no_sel_download: "다운로드할 파일을 선택하세요.",
+                no_sel_delete: "삭제할 항목을 선택하세요.",
+                confirm_delete: "선택한 {0}개 항목을 삭제하시겠습니까?",
+                items_copied_move: "{0}개 항목을 이동 대상으로 선택했습니다. 이동할 폴더로 이동 후 '여기로 이동'을 클릭하세요.",
+                folder_name_empty: "폴더 이름을 입력하세요."
+            }
+        };
+
+        let currentLang = localStorage.getItem('qplus_lang') || SERVER_LANG || 'en';
+
+        function t(key, ...args) {
+            const dict = I18N[currentLang] || I18N['en'];
+            let str = dict[key] || I18N['en'][key] || key;
+            if (args.length > 0) {
+                args.forEach((val, idx) => {
+                    str = str.replace(new RegExp('\\{' + idx + '\\}', 'g'), val);
+                });
+            }
+            return str;
+        }
+
+        function toggleLanguage() {
+            currentLang = (currentLang === 'en') ? 'ko' : 'en';
+            localStorage.setItem('qplus_lang', currentLang);
+            applyLanguage(currentLang);
+            if (typeof renderFileList === 'function') {
+                renderFileList();
+            }
+            if (typeof updateDiskUsageUI === 'function') {
+                updateDiskUsageUI();
+            }
+        }
+
+        function applyLanguage(lang) {
+            const langBtn = document.getElementById('lang-toggle-btn');
+            if (langBtn) {
+                langBtn.textContent = (lang === 'en') ? 'EN' : 'KO';
+                langBtn.title = (lang === 'en') ? 'Language: English (Click to switch to 한국어)' : '언어: 한국어 (클릭 시 English로 전환)';
+            }
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const k = el.getAttribute('data-i18n');
+                if (k && I18N[lang] && I18N[lang][k]) {
+                    el.textContent = I18N[lang][k];
+                }
+            });
+            document.querySelectorAll('[data-i18n-ph]').forEach(el => {
+                const k = el.getAttribute('data-i18n-ph');
+                if (k && I18N[lang] && I18N[lang][k]) {
+                    el.setAttribute('placeholder', I18N[lang][k]);
+                }
+            });
+            document.querySelectorAll('[data-i18n-title]').forEach(el => {
+                const k = el.getAttribute('data-i18n-title');
+                if (k && I18N[lang] && I18N[lang][k]) {
+                    el.setAttribute('title', I18N[lang][k]);
+                }
+            });
+            const selCount = document.getElementById('selection-count');
+            if (selCount) {
+                const count = document.querySelectorAll('.item-check:checked').length;
+                selCount.textContent = t('sel_count', count);
+            }
+        }
+
         let currentPath = '';
         let currentItems = [];
         let viewMode = localStorage.getItem('qplus_view_mode') || 'list';
@@ -1809,7 +2094,7 @@ $isAdmin = ($_SESSION['role'] ?? 'guest') === 'admin';
             window.__renderedItems = items;
 
             if (!items.length) {
-                area.innerHTML = '<div class="empty-state">표시할 파일이나 폴더가 없습니다.</div>';
+                area.innerHTML = `<div class="empty-state">${t('empty_folder')}</div>`;
                 updateSelectionBar();
                 return;
             }
@@ -1841,7 +2126,7 @@ $isAdmin = ($_SESSION['role'] ?? 'guest') === 'admin';
                         <div class="grid-info">
                             <div class="grid-title" title="${item.name}">${item.name}</div>
                             <div class="grid-meta">
-                                <span>${item.isDir ? (info.locked ? '잠금 폴더' : '폴더') : escapeHtml(item.sizeFormatted || '-')}</span>
+                                <span>${item.isDir ? (info.locked ? t('locked_folder') : t('folder')) : escapeHtml(item.sizeFormatted || '-')}</span>
                                 <span>${escapeHtml((item.mtimeFormatted || '').slice(0, 10))}</span>
                             </div>
                         </div>

@@ -30,7 +30,7 @@ $rootFiles = @(
 
 foreach ($f in $rootFiles) {
     $src = Join-Path $sourceRoot $f
-    if (-not (Test-Path $src)) { throw "필수 파일 누락: $src" }
+    if (-not (Test-Path $src)) { throw "Missing required file: $src" }
     Copy-Item -Path $src -Destination (Join-Path $stageDir $f) -Force
 }
 
@@ -124,12 +124,12 @@ class QplusSetupLauncher
 [System.IO.File]::WriteAllText($launcherCs, $csCode, (New-Object System.Text.UTF8Encoding $false))
 
 $csc = Get-ChildItem "C:\Windows\Microsoft.NET\Framework64" -Filter "csc.exe" -Recurse | Select-Object -First 1 -ExpandProperty FullName
-if (-not $csc) { throw "csc.exe를 찾을 수 없습니다." }
+if (-not $csc) { throw "csc.exe not found." }
 
 Write-Host "Compiling $outputExe..."
 & $csc /nologo /target:winexe /out:"$outputExe" /win32manifest:"$manifestFile" /resource:"$payloadZip,payload.zip" /resource:"$installerDir\qplus_installer.ps1,qplus_installer.ps1" "$launcherCs"
 if ($LASTEXITCODE -ne 0 -or -not (Test-Path $outputExe)) {
-    throw "csc.exe 컴파일 실패 (ExitCode=$LASTEXITCODE)"
+    throw "csc.exe compilation failed (ExitCode=$LASTEXITCODE)"
 }
 
 Remove-Item $launcherCs, $manifestFile -ErrorAction SilentlyContinue

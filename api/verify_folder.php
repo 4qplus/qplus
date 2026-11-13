@@ -5,7 +5,7 @@ require_once __DIR__ . '/../folder_access.php';
 
 if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
     http_response_code(401);
-    echo json_encode(array('success' => false, 'message' => '로그인이 필요합니다.'));
+    echo json_encode(array('success' => false, 'message' => 'Login required.'));
     exit;
 }
 
@@ -30,6 +30,6 @@ if (verifyPassword($password, $folderPasswords[$folderName])) {
     $_SESSION['unlocked_folders'][$folderName] = true;
     echo json_encode(array('success' => true));
 } else {
-    echo json_encode(array('success' => false, 'message' => '비밀번호가 일치하지 않습니다.'));
+    echo json_encode(array('success' => false, 'message' => 'Invalid password.'));
 }
 exit;

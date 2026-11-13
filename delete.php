@@ -6,7 +6,7 @@ recordSessionPresence();
 
 if (!isset($_SESSION['logged_in']) || $_SESSION['role'] !== 'admin') {
     http_response_code(401);
-    exit("권한이 없습니다.");
+    exit("Unauthorized.");
 }
 
 if (empty($_SESSION['csrf_token'])) {
@@ -21,12 +21,12 @@ $requestToken = isset($_SERVER['HTTP_X_CSRF_TOKEN'])
 
 if (!is_string($requestToken) || !hash_equals($_SESSION['csrf_token'], $requestToken)) {
     http_response_code(403);
-    exit("잘못된 요청입니다.");
+    exit("Invalid request.");
 }
 
 if ($fileParam === '' || strpos($fileParam, "\0") !== false) {
     http_response_code(400);
-    exit("잘못된 경로입니다.");
+    exit("Invalid path.");
 }
 
 $fileParam = urldecode($fileParam);
@@ -35,7 +35,7 @@ $fileParam = preg_replace('#/+#', '/', $fileParam);
 
 if ($fileParam === '.' || $fileParam === '..' || preg_match('#(^|/)\.\.?(/|$)#', $fileParam)) {
     http_response_code(400);
-    exit("잘못된 경로입니다.");
+    exit("Invalid path traversal.");
 }
 
 $basePath = QPLUS_STORAGE_DIR;
@@ -49,7 +49,7 @@ if (function_exists('mb_convert_encoding')) {
 
 if (is_link($systemFilePath)) {
     http_response_code(403);
-    exit("링크 파일은 삭제할 수 없습니다.");
+    exit("Symlink deletion is not permitted.");
 }
 
 $baseRealPath = realpath($basePath);
@@ -65,7 +65,7 @@ $basePrefix = $baseRealPath . '/';
 if (strcasecmp($targetRealPath, $baseRealPath) === 0
     || strncasecmp($targetRealPath, $basePrefix, strlen($basePrefix)) !== 0) {
     http_response_code(403);
-    exit("삭제할 수 없는 경로입니다.");
+    exit("Cannot delete root storage directory.");
 }
 
 $systemFilePath = $targetRealPath;
@@ -75,7 +75,7 @@ $protectedFolders = array('program', 'document', 'media', 'temp', 'api');
 
 if (strpos($relativeTarget, '/') === false && in_array($topLevelName, $protectedFolders, true)) {
     http_response_code(403);
-    exit("보호된 폴더입니다.");
+    exit("Protected system folder.");
 }
 
 function deleteDir($dirPath) {

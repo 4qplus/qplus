@@ -6,32 +6,32 @@ recordSessionPresence();
 require_once __DIR__ . '/folder_access.php';
 if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) { http_response_code(401); exit; }
 
-session_write_close(); // 세션 잠금 해제
-set_time_limit(0); // 시간 제한 해제
+session_write_close(); // Release session lock
+set_time_limit(0); // Remove execution time limit
 ini_set('memory_limit', '-1');
 
 $fileParam = isset($_GET['file']) ? trim((string)$_GET['file']) : '';
 if ($fileParam === '') {
     http_response_code(400);
-    die("<h2 style='color:red;'>[오류] 파일 경로가 전달되지 않았습니다.</h2>");
+    die("<h2 style='color:red;'>[Error] File path not provided.</h2>");
 }
 
-// 널 바이트 공격 방지
+// Prevent null-byte injection
 if (strpos($fileParam, "\0") !== false) {
     http_response_code(400);
-    die("<h2 style='color:red;'>[오류] 잘못된 경로입니다.</h2>");
+    die("<h2 style='color:red;'>[Error] Invalid path.</h2>");
 }
 
-// URL 디코딩 및 슬래시 표준화
+// URL decode and normalize slashes
 $fileParam = urldecode($fileParam);
 $fileParam = str_replace('\\', '/', $fileParam);
 $fileParam = preg_replace('#/+#', '/', $fileParam);
 $cleanPath = trim($fileParam, '/');
 
-// 상위 디렉터리 이동(..) 엄격 차단
+// Strictly block directory traversal (..)
 if ($cleanPath === '.' || $cleanPath === '..' || preg_match('#(^|/)\.\.?(/|$)#', $cleanPath)) {
     http_response_code(403);
-    die("<h2 style='color:red;'>[오류] 잘못된 경로 접근입니다.</h2>");
+    die("<h2 style='color:red;'>[Error] Access denied: Invalid path traversal.</h2>");
 }
 
 $basePath = QPLUS_STORAGE_DIR;
@@ -40,22 +40,22 @@ $systemFilePath = function_exists('mb_convert_encoding') ? mb_convert_encoding($
 
 if (!file_exists($systemFilePath)) {
     http_response_code(404);
-    die("<h2 style='color:red;'>[오류] 파일이나 폴더를 찾을 수 없습니다.</h2>");
+    die("<h2 style='color:red;'>[Error] File or directory not found.</h2>");
 }
 
-// 심볼릭 링크 방지
+// Block symlink downloads
 if (is_link($systemFilePath)) {
     http_response_code(403);
-    die("<h2 style='color:red;'>[오류] 링크 파일은 다운로드할 수 없습니다.</h2>");
+    die("<h2 style='color:red;'>[Error] Symlink downloads are not permitted.</h2>");
 }
 
-// realpath 검증: 대상 경로가 반드시 스토리지 디렉터리(QPLUS_STORAGE_DIR) 하위여야 함
+// realpath validation: target path must strictly reside under QPLUS_STORAGE_DIR
 $baseRealPath = realpath($basePath);
 $targetRealPath = realpath($systemFilePath);
 
 if ($baseRealPath === false || $targetRealPath === false) {
     http_response_code(404);
-    die("<h2 style='color:red;'>[오류] 경로를 확인할 수 없습니다.</h2>");
+    die("<h2 style='color:red;'>[Error] Could not resolve path.</h2>");
 }
 
 $baseRealPath = rtrim(str_replace('\\', '/', $baseRealPath), '/');
@@ -65,7 +65,7 @@ $basePrefix = $baseRealPath . '/';
 if (strcasecmp($targetRealPath, $baseRealPath) === 0
     || strncasecmp($targetRealPath, $basePrefix, strlen($basePrefix)) !== 0) {
     http_response_code(403);
-    die("<h2 style='color:red;'>[오류] 접근 권한이 없는 경로입니다.</h2>");
+    die("<h2 style='color:red;'>[Error] Access denied: Path outside storage root.</h2>");
 }
 
 if ($_SESSION['role'] !== 'admin') {
@@ -75,7 +75,7 @@ if ($_SESSION['role'] !== 'admin') {
     $lockedFolder = findLockedFolderPath($protectedPath, $folderPasswords, $_SESSION['unlocked_folders'] ?? array());
     if ($lockedFolder !== null) {
         http_response_code(403);
-        exit("폴더 잠금을 먼저 해제하세요.");
+        exit("Please unlock this folder first.");
     }
 }
 
@@ -116,10 +116,10 @@ if (is_dir($systemFilePath)) {
                 else if (is_file($realFilePath)) { $zip->addFile($realFilePath, $zipInternalPath); }
             }
         } catch (Exception $e) {
-            $zip->close(); @unlink($tempZip); die("압축 중 오류 발생");
+            $zip->close(); @unlink($tempZip); die("Compression error occurred.");
         }
         $zip->close();
-    } else { die("ZIP 생성 권한 오류"); }
+    } else { die("Permission denied creating ZIP archive."); }
     
     if (file_exists($tempZip) && filesize($tempZip) > 0) {
         if (ob_get_level()) { ob_end_clean(); }
@@ -136,10 +136,10 @@ if (is_dir($systemFilePath)) {
         @unlink($tempZip); 
     } else {
         if(file_exists($tempZip)) @unlink($tempZip);
-        die("압축 실패");
+        die("Compression failed.");
     }
 } 
-// 일반 파일인 경우 처리 (HTTP Range 이어받기 지원)
+// Handle single file download (supports HTTP Range resume)
 else {
     $fileName = basename($cleanPath);
     $handle = @fopen($systemFilePath, "rb");
@@ -172,7 +172,7 @@ else {
         $disposition = 'inline';
     }
 
-    // 브라우저에게 "이어받기(Range)를 지원한다"고 알림
+    // Inform browser that HTTP Range requests are accepted
     header('Accept-Ranges: bytes');
     
     $length = $fileSize;
