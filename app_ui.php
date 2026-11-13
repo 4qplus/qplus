@@ -501,6 +501,56 @@ $isAdmin = ($_SESSION['role'] ?? 'guest') === 'admin';
         .crumb-btn.current { color: var(--text-primary); font-weight: 700; }
         .crumb-sep { color: var(--text-muted); font-size: 12px; }
 
+        .btn-new-folder {
+            height: 32px;
+            padding: 0 12px;
+            border: 1px solid var(--border-color);
+            background: #ffffff;
+            color: var(--text-primary);
+            border-radius: 8px;
+            font-size: 12.5px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.15s ease;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .btn-new-folder:hover {
+            background: var(--brand-blue-soft);
+            border-color: var(--brand-blue);
+            color: var(--brand-blue);
+        }
+
+        .btn-new-folder svg {
+            color: var(--brand-blue);
+        }
+
+        .current-path-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            background: var(--bg-subtle);
+            border: 1px solid var(--border-color);
+            border-radius: 7px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            max-width: 320px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .current-path-badge svg {
+            color: var(--text-muted);
+            flex-shrink: 0;
+        }
+
         .toolbar-actions {
             display: flex;
             align-items: center;
@@ -1259,9 +1309,17 @@ $isAdmin = ($_SESSION['role'] ?? 'guest') === 'admin';
                                 <span>상위</span>
                             </button>
                             <div class="breadcrumb-list" id="breadcrumb-list"></div>
+                            <div class="current-path-badge" id="current-path-badge" title="현재 서버 디렉터리 경로">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                                <span id="current-path-text">/</span>
+                            </div>
                         </div>
 
                         <div class="toolbar-actions">
+                            <button type="button" class="btn-new-folder" onclick="openNewFolderModal()" title="현재 위치에 새 폴더를 만듭니다">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
+                                <span>새 폴더</span>
+                            </button>
                             <div class="selection-bar" id="selection-bar">
                                 <span class="selection-count" id="selection-count">0개 선택</span>
                                 <button type="button" class="t-btn primary" onclick="downloadSelectedFiles()">다운로드</button>
@@ -1482,6 +1540,19 @@ $isAdmin = ($_SESSION['role'] ?? 'guest') === 'admin';
         </div>
     </div>
 
+    <!-- New Folder Modal -->
+    <div id="new-folder-modal" class="modal-overlay" style="display:none;background:rgba(15,23,42,0.55);z-index:1006;" onclick="closeNewFolderModal()">
+        <div class="folder-auth-card" onclick="event.stopPropagation()">
+            <h3 class="folder-auth-title">새 폴더 만들기</h3>
+            <p class="folder-auth-sub" id="new-folder-modal-sub">현재 위치에 새 폴더를 생성합니다.</p>
+            <input type="text" class="form-input" id="new-folder-input-name" placeholder="폴더 이름 입력" maxlength="100" style="margin-bottom:16px;" onkeydown="if(event.key==='Enter') submitCreateFolder(); if(event.key==='Escape') closeNewFolderModal();">
+            <div class="folder-auth-btns">
+                <button type="button" class="btn-secondary" onclick="closeNewFolderModal()">취소</button>
+                <button type="button" class="btn-primary" onclick="submitCreateFolder()">생성</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Folder Auth Modal -->
     <div id="folder-auth-modal">
         <div class="folder-auth-card">
@@ -1602,7 +1673,11 @@ $isAdmin = ($_SESSION['role'] ?? 'guest') === 'admin';
 
         function renderBreadcrumb(path) {
             const list = document.getElementById('breadcrumb-list');
-            const parts = String(path || '').split('/').filter(Boolean);
+            const pathText = document.getElementById('current-path-text');
+            const pathBadge = document.getElementById('current-path-badge');
+            const normalized = String(path || '').replace(/\\/g, '/').replace(/^\/+|\/+$/g, '');
+            const parts = normalized ? normalized.split('/') : [];
+
             let html = `<button class="crumb-btn ${parts.length === 0 ? 'current' : ''}" onclick="loadDirectory('')">내 드라이브</button>`;
             let acc = '';
             parts.forEach((part, idx) => {
@@ -1612,6 +1687,10 @@ $isAdmin = ($_SESSION['role'] ?? 'guest') === 'admin';
                 html += `<span class="crumb-sep">›</span><button class="crumb-btn ${isLast ? 'current' : ''}" data-crumb="${escapeHtml(target)}" onclick="loadDirectory(this.dataset.crumb)">${escapeHtml(part)}</button>`;
             });
             list.innerHTML = html;
+
+            const fullDisplay = parts.length === 0 ? '/' : '/' + parts.join('/');
+            if (pathText) pathText.innerText = fullDisplay;
+            if (pathBadge) pathBadge.title = '현재 디렉터리: ' + fullDisplay;
         }
 
         function goUpDirectory() {
@@ -2049,21 +2128,63 @@ $isAdmin = ($_SESSION['role'] ?? 'guest') === 'admin';
             loadDirectory(currentPath);
         }
 
-        async function createFolder() {
-            document.getElementById('upload-dropdown').classList.remove('open');
-            const folderName = prompt('새로 만들 폴더의 이름을 입력하세요:');
-            if (!folderName) return;
+        function openNewFolderModal() {
+            const dd = document.getElementById('upload-dropdown');
+            if (dd) dd.classList.remove('open');
+            const sub = document.getElementById('new-folder-modal-sub');
+            const normalized = String(currentPath || '').replace(/\\/g, '/').replace(/^\/+|\/+$/g, '');
+            const locText = normalized ? `/${normalized}/` : '내 드라이브 최상위(/)';
+            if (sub) sub.innerText = `위치: ${locText}`;
+            const input = document.getElementById('new-folder-input-name');
+            if (input) input.value = '';
+            const modal = document.getElementById('new-folder-modal');
+            if (modal) modal.style.display = 'flex';
+            setTimeout(() => { if (input) input.focus(); }, 60);
+        }
+
+        function closeNewFolderModal() {
+            const modal = document.getElementById('new-folder-modal');
+            if (modal) modal.style.display = 'none';
+        }
+
+        async function submitCreateFolder() {
+            const input = document.getElementById('new-folder-input-name');
+            const folderName = input ? input.value.trim() : '';
+            if (!folderName) {
+                alert('폴더 이름을 입력하세요.');
+                if (input) input.focus();
+                return;
+            }
+            if (/[<>:"\/\\|?*]/.test(folderName)) {
+                alert('폴더 이름에 사용할 수 없는 특수문자가 포함되어 있습니다. (< > : " / \\ | ? *)');
+                if (input) input.focus();
+                return;
+            }
             const fd = new URLSearchParams();
             fd.append('action', 'create_folder');
             fd.append('path', currentPath);
             fd.append('folder_name', folderName);
             fd.append('csrf_token', CSRF_TOKEN);
             try {
-                const res = await fetch('index.php', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: fd.toString() });
+                const res = await fetch('index.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: fd.toString()
+                });
                 const data = await res.json();
-                if (data.success) loadDirectory(currentPath);
-                else alert('오류: ' + data.msg);
-            } catch (e) { alert('서버 통신 오류가 발생했습니다.'); }
+                if (data.success) {
+                    closeNewFolderModal();
+                    loadDirectory(currentPath);
+                } else {
+                    alert('오류: ' + (data.msg || '폴더 생성에 실패했습니다.'));
+                }
+            } catch (e) {
+                alert('서버 통신 오류가 발생했습니다.');
+            }
+        }
+
+        function createFolder() {
+            openNewFolderModal();
         }
 
         /* Drag & Drop Upload + Floating Toast */
