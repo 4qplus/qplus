@@ -1,0 +1,26 @@
+# Live server configuration & user data (NEVER commit)
+config.php
+tips_data.php
+requests_data.php
+directory/
+temp/
+qplus/
+_backup_security/
+ddns_update.ps1
+
+# Bundled runtime & build artifacts (built by GitHub Actions / Releases)
+php/
+installer/payload.zip
+installer/qplus_setup.exe
+installer/_stage/
+installer/_launcher.cs
+installer/_app.manifest
+installer/qplus_setup.sed
+installer/qplus_setup.iss
+
+# OS / IDE files
+.DS_Store
+Thumbs.db
+*.log
+.vscode/
+
